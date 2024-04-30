@@ -1,0 +1,228 @@
+/*
+Alexander Gallegos, Maitham Taleb
+ECE 175
+DR Cao
+04/28/2024
+*/
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#define DECK_SIZE 84
+
+typedef struct {
+     int value;
+     char action[15];
+} card;
+
+void deckScan(card c[], FILE *inp);
+void printHand(card c[]);
+void deckRandomizer(card c[]);
+void distributeDecks(card c[], card p1[],card p2[]);
+void sortHand(card c[]);
+void drawCard(card deck[], card p1[], int deckNum, int swap);
+void checkWIn(card c[]);
+
+int main()
+{
+    FILE *inp = fopen("deck.txt", "r");
+    card deck[DECK_SIZE];
+    card p1Hand[7];//array holding player 1 cards
+    card p2Hand[7];//array holding player 2 cards
+    card action[4];
+    char p1Name[15], p2Name[15];
+    bool isShuffle;
+    char shuffle, choice;
+    int deckNum = 14, actionsNum = 0, swapped, choseDrawn, turn = 1;
+
+    deckScan(deck,inp);//scans deck from file into array
+
+
+    //asks user if they want to randomize the dek or not
+    printf("Play with shuffled deck? (y/n)");
+    scanf("%c", &shuffle);
+    if (shuffle == 'y' || shuffle == 'Y'){
+        isShuffle = true;
+    }
+    else if (shuffle == 'n' || shuffle == 'N'){
+        isShuffle = false;
+    }
+    if (isShuffle == true){
+    deckRandomizer(deck);// shuffles the deck randomly
+    }
+
+    //asks for players names
+    printf("Enter player 1 name: ");
+    scanf("%s",p1Name);
+    printf("Enter player 2 name: ");
+    scanf("%s",p2Name);
+
+    distributeDecks(deck,p1Hand,p2Hand);//distrubutes first 14 cards in deck to players
+
+    // sorts hand in decending order
+    sortHand(p1Hand);
+    sortHand(p2Hand);
+
+    
+    
+    while(deckNum <= 84){
+    ////PLAYER 1
+    printf("%s's hand\n",p1Name);
+    printHand(p1Hand);
+    if(actionsNum > 0)
+    {
+        printf("%s's turn\n Do you want to draw(d) or use action(a)",p1Name);
+        scanf("%c", choice);
+        if(choice == 'd')
+        {
+            printf("what card do you want to swap?");
+            scanf("%d",swapped);
+            drawCard(deck, p1Hand, deckNum, swapped);
+            deckNum++;
+        }
+        else if(choice == 'a')
+        {
+            //pickAction(action,p1Hand);
+        }
+    }
+    else
+    {
+        printf("Drawn card: |%d %s| \nWhat card do you want to replace it with?", deck[deckNum].value,deck[deckNum].action);
+        scanf("%d",&swapped);
+        drawCard(deck, p1Hand, deckNum, swapped);
+        deckNum++;
+    }
+    printf("%s's NEW hand\n",p1Name);
+    printHand(p1Hand);
+    checkWIn(p1Hand);
+
+    /////PLAYER 2
+    printf("%s's hand\n",p2Name);
+    printHand(p2Hand);
+    if(actionsNum > 0)
+    {
+        printf("%s's turn\n Do you want to draw(d) or use action(a)",p2Name);
+        scanf("%c", choice);
+        if(choice == 'd')
+        {
+            printf("Drawn cards: |%d %s|%d %s|\nWhich card do you choose (1 or 2): ", deck[deckNum].value,deck[deckNum].action,deck[deckNum + 1].value,deck[deckNum + 1].action);
+            scanf("%d",&choseDrawn);
+            if(choseDrawn == 2) deckNum++;
+            printf("What card do you want to replace it with?");
+            scanf("%d",&swapped);
+            drawCard(deck, p2Hand, deckNum, swapped);
+            deckNum++;
+        }
+        else if(choice == 'a')
+        {
+            //pickAction(action,p1Hand);
+        }
+    }
+    else
+    {
+        printf("Drawn cards: |%d %s|%d %s|\nWhich card do you choose (1 or 2): ", deck[deckNum].value,deck[deckNum].action,deck[deckNum + 1].value,deck[deckNum + 1].action);
+        scanf("%d",&choseDrawn);
+        if(choseDrawn == 2) deckNum++;
+        printf("What card do you want to replace it with?");
+        scanf("%d",&swapped);
+        drawCard(deck, p2Hand, deckNum, swapped);
+        deckNum++;
+        
+    }
+    printf("%s's NEW hand\n",p2Name);
+    printHand(p2Hand);
+    checkWIn(p2Hand);
+    }
+    
+    
+    fclose(inp);
+    return 0;
+}
+
+
+
+void deckScan(card c[], FILE *inp){
+   
+    for (int i = 0; i < 84; i++){
+       
+        fscanf (inp, "%d", &c[i].value);
+        fscanf (inp, "%s", c[i].action);
+    }
+
+   
+}
+void printHand(card c[])
+{
+    for (int i = 0; i < 7; i++){
+       
+        printf("|%d %s", c[i].value,c[i].action);
+    }
+    printf("|\n\n");
+}
+void deckRandomizer(card c[])
+{
+    card temp;
+    int j;
+    srand(time(NULL)); 
+    for (int i=0; i < DECK_SIZE ; i++) 
+    { 
+        j = (rand()%51) + 1; 
+        temp = c[i]; 
+        c[i] = c[j]; 
+        c[j] = temp; 
+    }
+
+}
+void distributeDecks(card c[], card p1[],card p2[])
+{
+    for(int i = 0; i < 7; i++)
+    {
+        p1[i] = c[i];
+    }
+    for(int j = 7; j < 14; j++)
+    {
+        p2[j - 7] = c[j];
+    }
+}
+void sortHand(card c[])
+{
+    int index;
+    card temp;
+    for(int i = 0; i < 7; i++)
+    {
+        index = i;
+        for(int j = i + 1; j < 7; j++)
+        {
+            if(c[j].value > c[index].value)
+            {
+                index = j;
+            }
+        }
+        temp = c[i];
+        c[i] = c[index];
+        c[index] = temp;
+    }
+
+}
+void drawCard(card deck[], card p1[], int deckNum, int swap)
+{
+    for(int i = 0; i < 7; i++)
+    {
+        if(p1[i].value == swap)
+        {
+            p1[i] = deck[deckNum];
+        }
+    }
+}
+void checkWIn(card c[])
+{
+    for (int i = 0; i < 6; i++)
+    {
+        if (c[i].value > c[i + 1].value)
+        {
+            return;
+        }
+    }    
+    printf("CONGRADULATIONS, YOU WIN!!");
+    exit(0);
+}
